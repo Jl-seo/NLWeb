@@ -1,0 +1,315 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0" version="29.3.1">
+  <diagram name="Page-1" id="RpLmiV9i7ElfnlvGPNJj">
+    <mxGraphModel dx="2938" dy="1129" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=22;fontStyle=1;fontColor=#1565c0;" value="Agent Portal - 프로덕션 아키텍처 (VPN 포함)" vertex="1">
+          <mxGeometry height="40" width="700" x="100" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontColor=#666666;" value="개발기간: 10주 (VPN +2주) | 팀: 3-4명 | 월 비용: ~$1,310" vertex="1">
+          <mxGeometry height="25" width="700" x="100" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#3f51b5;verticalAlign=top;fontSize=13;fontStyle=1;" value="온프레미스 / AWS 네트워크 (172.16.0.0/16)" vertex="1">
+          <mxGeometry height="200" width="500" x="100" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5cae9;strokeColor=#3f51b5;fontSize=11;" value="개발자 PC&#xa;172.16.1.0/24" vertex="1">
+          <mxGeometry height="60" width="120" x="140" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5cae9;strokeColor=#3f51b5;fontSize=11;" value="운영 서버&#xa;172.16.10.0/24" vertex="1">
+          <mxGeometry height="60" width="120" x="300" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9fa8da;strokeColor=#3f51b5;fontSize=11;fontStyle=1;" value="온프레미스&#xa;VPN Gateway" vertex="1">
+          <mxGeometry height="60" width="120" x="460" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=13;fontStyle=1;" value="INTERNET ZONE" vertex="1">
+          <mxGeometry height="200" width="1620" x="680" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#3f51b5;fontSize=11;" value="외부 사용자&#xa;2000+" vertex="1">
+          <mxGeometry height="60" width="100" x="730" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;fontSize=11;fontStyle=1;" value="Entra ID&#xa;+ MFA" vertex="1">
+          <mxGeometry height="60" width="110" x="1800" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f57f17;fontSize=11;fontStyle=1;" value="Graph API&#xa;M365 Copilot" vertex="1">
+          <mxGeometry height="60" width="130" x="1970" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=11;fontStyle=1;" value="Power Platform&#xa;Dataverse" vertex="1">
+          <mxGeometry height="60" width="130" x="2150" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;verticalAlign=top;fontSize=13;fontStyle=1;" value="EDGE SECURITY" vertex="1">
+          <mxGeometry height="130" width="2200" x="100" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=12;fontStyle=1;" value="Application Gateway + WAF" vertex="1">
+          <mxGeometry height="60" width="180" x="790" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f57f17;fontSize=10;align=left;" value="✓ OWASP 3.2&#xa;✓ Rate Limiting&#xa;✓ DDoS Protection&#xa;✓ TLS 1.2+" vertex="1">
+          <mxGeometry height="70" width="150" x="1020" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;verticalAlign=top;fontSize=13;fontStyle=1;" value="AZURE VIRTUAL NETWORK (10.0.0.0/16)" vertex="1">
+          <mxGeometry height="620" width="2200" x="100" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#01579b;fontSize=11;verticalAlign=top;fontStyle=1;" value="GatewaySubnet&#xa;10.0.10.0/27" vertex="1">
+          <mxGeometry height="130" width="220" x="150" y="575" as="geometry" />
+        </mxCell>
+        <mxCell id="18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4fc3f7;strokeColor=#01579b;fontSize=11;fontStyle=1;" value="VPN Gateway&#xa;VpnGw1 (1Gbps)" vertex="1">
+          <mxGeometry height="60" width="140" x="180" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="19" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontColor=#01579b;" value="BGP: 65515" vertex="1">
+          <mxGeometry height="20" width="120" x="190" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=11;verticalAlign=top;fontStyle=1;" value="AppGW Subnet&#xa;10.0.4.0/24" vertex="1">
+          <mxGeometry height="100" width="220" x="150" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#2e7d32;fontSize=10;" value="App Gateway" vertex="1">
+          <mxGeometry height="40" width="140" x="180" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=11;verticalAlign=top;fontStyle=1;" value="Frontend Subnet - 10.0.1.0/24" vertex="1">
+          <mxGeometry height="240" width="320" x="150" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;fontSize=11;fontStyle=1;" value="Container Apps&#xa;Frontend&#xa;(Next.js 14)" vertex="1">
+          <mxGeometry height="70" width="140" x="190" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#bf360c;fontSize=10;fontStyle=1;" value="NSG" vertex="1">
+          <mxGeometry height="30" width="70" x="360" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="25" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="• Auto-scale: 1-10&#xa;• OIDC Auth&#xa;• Session: 8h&#xa;• 온프레미스 접근 ✓" vertex="1">
+          <mxGeometry height="70" width="260" x="180" y="1025" as="geometry" />
+        </mxCell>
+        <mxCell id="26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=11;verticalAlign=top;fontStyle=1;" value="Backend Subnet - 10.0.2.0/24" vertex="1">
+          <mxGeometry height="240" width="380" x="530" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;fontSize=11;fontStyle=1;" value="Container Apps&#xa;Backend API&#xa;(Node.js)" vertex="1">
+          <mxGeometry height="70" width="140" x="570" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="28" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b39ddb;strokeColor=#4a148c;fontSize=10;fontStyle=1;" value="Managed&#xa;Identity" vertex="1">
+          <mxGeometry height="50" width="90" x="750" y="905" as="geometry" />
+        </mxCell>
+        <mxCell id="29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#bf360c;fontSize=10;fontStyle=1;" value="NSG" vertex="1">
+          <mxGeometry height="30" width="70" x="760" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="30" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="로그 수집 (Pull, 1h):&lt;br&gt;1. Graph API 호출&lt;br&gt;2. 데이터 검증&lt;br&gt;3. PII 마스킹&lt;br&gt;4. SQL 저장&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="85" width="330" x="560" y="1035" as="geometry" />
+        </mxCell>
+        <mxCell id="31" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontSize=11;verticalAlign=top;fontStyle=1;" value="Private Endpoints - 10.0.5.0/24" vertex="1">
+          <mxGeometry height="240" width="530" x="970" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="32" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="PE: SQL&#xa;10.0.5.4" vertex="1">
+          <mxGeometry height="50" width="100" x="1010" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="33" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="PE: KeyVault&#xa;10.0.5.6" vertex="1">
+          <mxGeometry height="50" width="110" x="1160" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="PE: Storage&#xa;10.0.5.5" vertex="1">
+          <mxGeometry height="50" width="110" x="1320" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="35" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ce93d8;strokeColor=#7b1fa2;fontSize=10;fontStyle=1;" value="Private DNS Zones" vertex="1">
+          <mxGeometry height="40" width="130" x="1070" y="1050" as="geometry" />
+        </mxCell>
+        <mxCell id="36" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="✓ NO Public Access&#xa;✓ VNet Only&#xa;✓ VPN 통해 접근 가능" vertex="1">
+          <mxGeometry height="45" width="200" x="1290" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="37" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=12;verticalAlign=top;fontStyle=1;" value="MONITORING &amp; SECURITY" vertex="1">
+          <mxGeometry height="545" width="690" x="1560" y="575" as="geometry" />
+        </mxCell>
+        <mxCell id="38" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff59d;strokeColor=#f57f17;fontSize=10;" value="Application&#xa;Insights" vertex="1">
+          <mxGeometry height="50" width="110" x="1610" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="39" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff59d;strokeColor=#f57f17;fontSize=10;" value="Log Analytics" vertex="1">
+          <mxGeometry height="50" width="110" x="1780" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="40" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#bf360c;fontSize=10;" value="Defender&#xa;for Cloud" vertex="1">
+          <mxGeometry height="50" width="110" x="1950" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="41" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#01579b;fontSize=10;" value="Container&#xa;Registry" vertex="1">
+          <mxGeometry height="50" width="110" x="1610" y="715" as="geometry" />
+        </mxCell>
+        <mxCell id="42" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#01579b;fontSize=10;" value="Azure DevOps&#xa;CI/CD" vertex="1">
+          <mxGeometry height="50" width="110" x="1780" y="715" as="geometry" />
+        </mxCell>
+        <mxCell id="43" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c5e1a5;strokeColor=#558b2f;fontSize=10;" value="Terraform&#xa;IaC" vertex="1">
+          <mxGeometry height="50" width="110" x="1950" y="715" as="geometry" />
+        </mxCell>
+        <mxCell id="44" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;fillColor=#ffebee;strokeColor=#c62828;" value="알림 규칙:&#xa;• 실패한 인증 (5+/10min)&#xa;• 높은 에러율&#xa;• CPU/Memory &gt;80%&#xa;• VPN 연결 끊김 ⭐&#xa;• Graph API Rate Limit&#xa;&#xa;로깅:&#xa;• 모든 API 호출&#xa;• NSG Flow Logs&#xa;• VPN 연결 로그 ⭐&#xa;• Audit Logs" vertex="1">
+          <mxGeometry height="150" width="430" x="1610" y="805" as="geometry" />
+        </mxCell>
+        <mxCell id="45" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;fontSize=9;align=left;verticalAlign=top;" value="VPN 연결 정보:&#xa;• 온프레미스: 172.16.0.0/16&#xa;• Azure: 10.0.0.0/16&#xa;• BGP: Enabled&#xa;• Bandwidth: 1Gbps&#xa;• Encryption: IPsec (AES-256)&#xa;• 이중화: Active-Standby" vertex="1">
+          <mxGeometry height="115" width="430" x="1610" y="985" as="geometry" />
+        </mxCell>
+        <mxCell id="46" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;verticalAlign=top;fontSize=13;fontStyle=1;" value="DATA LAYER (PRIVATE)" vertex="1">
+          <mxGeometry height="200" width="2200" x="100" y="1190" as="geometry" />
+        </mxCell>
+        <mxCell id="47" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=11;fontStyle=1;" value="Azure SQL&#xa;Standard S2" vertex="1">
+          <mxGeometry height="60" width="140" x="150" y="1245" as="geometry" />
+        </mxCell>
+        <mxCell id="48" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="✓ TDE (CMK)&#xa;✓ 백업 7일&#xa;✓ VPN 접근 가능" vertex="1">
+          <mxGeometry height="55" width="140" x="150" y="1315" as="geometry" />
+        </mxCell>
+        <mxCell id="49" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=11;fontStyle=1;" value="Key Vault" vertex="1">
+          <mxGeometry height="60" width="140" x="350" y="1245" as="geometry" />
+        </mxCell>
+        <mxCell id="50" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="✓ Secrets&#xa;✓ Keys Rotation&#xa;✓ VPN 접근 가능" vertex="1">
+          <mxGeometry height="55" width="140" x="350" y="1315" as="geometry" />
+        </mxCell>
+        <mxCell id="51" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=11;fontStyle=1;" value="Storage Account" vertex="1">
+          <mxGeometry height="60" width="140" x="550" y="1245" as="geometry" />
+        </mxCell>
+        <mxCell id="52" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="✓ Soft Delete&#xa;✓ Versioning&#xa;✓ VPN 접근 가능" vertex="1">
+          <mxGeometry height="55" width="140" x="550" y="1315" as="geometry" />
+        </mxCell>
+        <mxCell id="53" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f57f17;fontSize=11;verticalAlign=top;fontStyle=1;dashed=1;" value="PHASE 2 (추가 예정)" vertex="1">
+          <mxGeometry height="125" width="410" x="770" y="1245" as="geometry" />
+        </mxCell>
+        <mxCell id="54" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="• Azure Firewall&#xa;• Sentinel (SIEM)&#xa;• Service Bus + Functions&#xa;• ExpressRoute (전용선)&#xa;• Multi-region DR&#xa;• Geo-redundant Storage" vertex="1">
+          <mxGeometry height="80" width="370" x="790" y="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="57" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;verticalAlign=top;fontStyle=1;" value="범례" vertex="1">
+          <mxGeometry height="110" width="1100" x="100" y="1440" as="geometry" />
+        </mxCell>
+        <mxCell id="58" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;" value="— HTTPS/TLS    — VPN Tunnel (IPsec)    — Internal API    ⇢ Authentication    ⇢ Private Link    ⇢ Monitoring" vertex="1">
+          <mxGeometry height="20" width="1000" x="130" y="1480" as="geometry" />
+        </mxCell>
+        <mxCell id="59" parent="1" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;" value="핵심: ✓ VPN (1Gbps) ✓ 온프레미스 연동 ✓ WAF ✓ MFA ✓ NSG ✓ Private Endpoints ✓ TDE ✓ Pull 방식 로그" vertex="1">
+          <mxGeometry height="20" width="1000" x="130" y="1510" as="geometry" />
+        </mxCell>
+        <mxCell id="60" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;fontSize=11;verticalAlign=top;fontStyle=1;" value="VPN 사용 시나리오" vertex="1">
+          <mxGeometry height="110" width="970" x="1280" y="1440" as="geometry" />
+        </mxCell>
+        <mxCell id="61" parent="1" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=9;" value="1. 개발자 PC (172.16.1.x) → VPN → Azure VM/Container (10.0.x.x) [SSH/RDP 접근]&#xa;2. 개발자 PC → VPN → Azure SQL (10.0.5.4) [데이터베이스 직접 쿼리]&#xa;3. Backend Container (10.0.2.x) → VPN → 온프레미스 API (172.16.10.x) [레거시 시스템 연동]&#xa;4. Backend Container → VPN → 온프레미스 DB (172.16.10.100) [기존 데이터 조회]" vertex="1">
+          <mxGeometry height="60" width="930" x="1300" y="1475" as="geometry" />
+        </mxCell>
+        <mxCell id="100" edge="1" parent="1" source="7" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#3f51b5;dashed=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="17" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="440" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="101" connectable="0" parent="100" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#3f51b5;fontStyle=1;backgroundColor=#e8eaf6;" value="Site-to-Site VPN&#xa;IPsec Tunnel" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="102" edge="1" parent="1" source="9" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#2e7d32;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="14" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="103" edge="1" parent="1" source="9" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#1565c0;dashed=1;" target="10" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="104" edge="1" parent="1" source="14" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#2e7d32;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="20" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="430" />
+              <mxPoint x="410" y="790" />
+            </Array>
+            <mxPoint x="380" y="430" as="sourcePoint" />
+            <mxPoint x="366.9333333333334" y="805" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="105" edge="1" parent="1" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#2e7d32;entryX=0.064;entryY=0.014;entryDx=0;entryDy=0;entryPerimeter=0;" target="23" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="190" y="820" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="106" edge="1" parent="1" source="23" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#388e3c;" target="27" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="107" edge="1" parent="1" source="28" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#1565c0;dashed=1;" target="11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="795" y="500" />
+              <mxPoint x="2035" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="108" connectable="0" parent="107" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#1565c0;backgroundColor=#e1f5fe;" value="M365 Copilot (Pull)" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="109" edge="1" parent="1" source="28" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#7b1fa2;dashed=1;" target="12" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="795" y="520" />
+              <mxPoint x="2215" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="110" connectable="0" parent="109" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#7b1fa2;backgroundColor=#f3e5f5;" value="PP Copilot (Pull)" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="111" edge="1" parent="1" source="27" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#7b1fa2;" target="32" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="112" connectable="0" parent="111" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#7b1fa2;backgroundColor=#ffffff;" value="Private Link" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint x="-50" y="-171" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="113" edge="1" parent="1" source="32" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#7b1fa2;" target="47" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1060" y="1170" />
+              <mxPoint x="220" y="1170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="114" edge="1" parent="1" source="33" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#7b1fa2;" target="49" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1215" y="1180" />
+              <mxPoint x="420" y="1180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="115" edge="1" parent="1" source="23" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#ff6f00;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="38" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="260" y="1020" />
+              <mxPoint x="810" y="1020" />
+              <mxPoint x="1530" y="1020" />
+              <mxPoint x="1530" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="116" edge="1" parent="1" source="27" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#ff6f00;dashed=1;" target="39" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1550" y="970" />
+              <mxPoint x="1550" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="117" edge="1" parent="1" source="5" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#3f51b5;dashed=1;" target="18" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="350" />
+              <mxPoint x="220" y="350" />
+              <mxPoint x="250" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="118" connectable="0" parent="117" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#3f51b5;backgroundColor=#e8eaf6;" value="VPN Access" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="119" edge="1" parent="1" source="18" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#3f51b5;dashed=1;" target="47" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="80" y="655" />
+              <mxPoint x="80" y="1275" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="120" connectable="0" parent="119" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#3f51b5;backgroundColor=#e8eaf6;" value="VPN → SQL" vertex="1">
+          <mxGeometry relative="1" x="-0.1" y="2" as="geometry">
+            <mxPoint x="15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
