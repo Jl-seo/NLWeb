@@ -40,7 +40,10 @@ def changed_files(root: str, rev_range: Optional[str] = None,
     if not is_git_repo(root):
         raise RuntimeError(f"{root} 는 git 저장소가 아닙니다. --objects 로 변경 오브젝트를 직접 지정하세요.")
 
-    args = ["diff", "--name-status", "--find-renames"]
+    # --relative makes paths relative to `root` and scopes the diff to it, so a
+    # code directory nested inside a larger repository still maps cleanly onto
+    # the object paths recorded by the scanner.
+    args = ["diff", "--name-status", "--find-renames", "--relative"]
     if since:
         args += [f"--since={since}"]
     if rev_range:
