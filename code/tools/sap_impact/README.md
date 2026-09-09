@@ -95,14 +95,19 @@ python -m tools.sap_impact.test_sap_impact
 BTP(CAP 스키마·서비스·핸들러, UI5 manifest·뷰·컨트롤러·프래그먼트)가 실제 참조 관계를 갖도록
 구성돼 있어, 스캔 한 번으로 전 구간 동작을 확인할 수 있습니다.
 
-## 운영 전개 시 (Azure)
+## M365 / Microsoft Foundry 배포
 
-PoC는 단일 프로세스 CLI입니다. 실제 규모로 올릴 때의 매핑:
+`service/` 에 HTTP 서비스 계층이 있습니다. 분석 엔진을 Foundry Agent Service의 **OpenAPI 도구**로
+노출하고, 그 에이전트를 **Microsoft 365 Copilot / Teams**에 게시하는 경로입니다.
+설정·배포·인증·게시 절차는 [service/README.md](service/README.md) 를 참조하십시오.
 
-| PoC | 운영 |
+이 배포에서는 해석 계층이 서비스에서 에이전트로 이동합니다. 서비스는 사실(참조 경로·근거·위험도)만
+반환하고, 에이전트 지시문이 "도구 응답에 없는 오브젝트명을 만들지 말 것"을 강제합니다.
+
+| CLI | Foundry 배포 |
 |---|---|
-| 디렉토리 스캔 | abapGit 미러 → Azure DevOps/GitHub 리포지토리, 커밋 훅으로 증분 스캔 |
-| `index.json` | Azure AI Search (코드 청크 하이브리드 검색) + Azure SQL/Cosmos DB (참조 엣지) |
-| `search.py` 렉시컬 매칭 | Azure AI Search 하이브리드(벡터+키워드) 검색 |
-| `explain.py` | Azure OpenAI / Azure AI Foundry |
-| CLI | Copilot Studio 에이전트 (개발자·현업 대화형 진입점) |
+| 디렉토리 스캔 | abapGit 미러 git clone/pull → 백그라운드 인덱싱, 디스크 캐시 |
+| `index.json` | 컨테이너 메모리 + 영구 볼륨 캐시 (규모 확대 시 Azure AI Search + 그래프 저장소) |
+| `explain.py` 의 LLM 호출 | Foundry 에이전트의 모델 (`service/agent_instructions.md`) |
+| CLI 명령 | OpenAPI 도구 operation (`analyzeImpact`, `analyzeChangeSet`, `whereUsed` 등) |
+| 터미널 | Microsoft 365 Copilot / Teams 대화
