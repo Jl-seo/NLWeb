@@ -1,4 +1,16 @@
-# SAP 변경 영향 분석 서비스 — Azure Container Apps / App Service(컨테이너) 배포용
+# SAP 변경 영향 분석 — 웹 앱 + API 단일 컨테이너
+# 빌드 컨텍스트는 sap_impact 디렉토리:
+#   docker build -f service/Dockerfile -t sap-impact code/tools/sap_impact
+
+# 1단계: React 앱 빌드 (결과물은 service/webdist)
+FROM node:22-slim AS web
+WORKDIR /src
+COPY web/package.json web/package-lock.json /src/web/
+RUN cd web && npm ci
+COPY web /src/web
+RUN cd web && npm run build
+
+# 2단계: 분석 엔진 + API + 정적 앱 서빙
 FROM python:3.11-slim
 
 # git: abapGit 미러 clone/pull 및 수정내역(diff) 분석에 사용
@@ -11,9 +23,9 @@ WORKDIR /app
 COPY service/requirements.txt /app/service-requirements.txt
 RUN pip install --no-cache-dir -r /app/service-requirements.txt
 
-# sap_impact 패키지 전체를 복사 (service 는 상위 패키지의 분석 모듈을 사용)
 COPY . /app/sap_impact/
-RUN rm -rf /app/sap_impact/samples
+RUN rm -rf /app/sap_impact/samples /app/sap_impact/web
+COPY --from=web /src/service/webdist /app/sap_impact/service/webdist
 
 ENV SAP_IMPACT_CACHE=/home/cache \
     PYTHONUNBUFFERED=1 \

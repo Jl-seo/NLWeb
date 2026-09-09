@@ -83,6 +83,23 @@ def file_history(root: str, path: str, limit: int = 10) -> List[FileChange]:
     return history
 
 
+def recent_commits(root: str, limit: int = 15) -> List[FileChange]:
+    """Recent commits on the current branch: the change feed the dashboard shows."""
+    code, out = _git(root, [
+        "log", f"-{limit}", "--date=short",
+        "--pretty=format:%h%x09%an%x09%ad%x09%s",
+    ])
+    if code != 0:
+        return []
+    commits: List[FileChange] = []
+    for line in out.splitlines():
+        fields = line.split("\t")
+        if len(fields) == 4:
+            commits.append(FileChange(status="M", path="", commit=fields[0], author=fields[1],
+                                      date=fields[2], subject=fields[3]))
+    return commits
+
+
 def map_files_to_objects(cb: CodeBase, changes: List[FileChange]) -> Tuple[List[str], List[FileChange]]:
     """Map changed file paths back to object keys. Returns (keys, unmapped)."""
     index: Dict[str, str] = {}

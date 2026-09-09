@@ -37,11 +37,15 @@ CLI에서는 `explain.py` 가 직접 LLM을 호출했지만, Foundry 배포에�
 | `SAP_IMPACT_PUBLIC_URL` | 스키마의 server URL. Foundry가 호출할 공개 주소 |
 | `SAP_IMPACT_CACHE` | 인덱스 캐시 경로 (영구 볼륨 권장) |
 
+추가로 에이전트 패널을 쓰려면 `FOUNDRY_PROJECT_ENDPOINT`(및 선택적으로 `FOUNDRY_AGENT_NAME`)를
+지정하고, 컨테이너의 관리 ID에 Foundry 프로젝트 권한을 부여합니다.
+
 ```bash
-# Container Apps 예시
+# Container Apps 예시 (Dockerfile 이 React 앱까지 함께 빌드)
 az containerapp up -n sap-impact -g <rg> --source code/tools/sap_impact \
   --env-vars SAP_IMPACT_GIT_URL=https://dev.azure.com/<org>/<proj>/_git/<repo> \
-             SAP_IMPACT_API_KEY=<key> SAP_IMPACT_PUBLIC_URL=https://<fqdn>
+             SAP_IMPACT_API_KEY=<key> SAP_IMPACT_PUBLIC_URL=https://<fqdn> \
+             FOUNDRY_PROJECT_ENDPOINT=https://<res>.services.ai.azure.com/api/projects/<proj>
 ```
 
 기동 시 캐시된 인덱스를 읽고, 없으면 백그라운드로 스캔합니다. 스캔 중 요청은 503과 함께
@@ -97,12 +101,15 @@ M365 서비스에서 처리·저장됩니다. SAP 소스 코드 조각이 응답
 분류·리전 정책에 맞는지 게시 전에 확인해야 합니다. 필요하면 응답 근거의 코드 구문 노출 범위를
 줄이도록 `SAP_IMPACT_MAX_IMPACTED` 와 지시문을 조정하십시오.
 
-## Teams 앱 (탭 + 카드)
+## 웹 앱과 Teams 패키징
 
-챗 에이전트만으로는 영향 목록·회귀 테스트 체크리스트를 담을 수 없습니다. 요약은 Adaptive Card,
-전체 목록은 Teams 탭으로 나누는 패키지가 [`../teams_app/`](../teams_app/README.md) 에 있습니다.
-서비스가 탭 UI(`/ui/tab.html`)와 카드(`POST /cards/impact`)를 함께 제공하므로 추가 호스팅은
-필요 없습니다.
+사용자 화면은 React 앱입니다([`../web/`](../web/README.md)) — 대시보드, 영향 분석, 코드 리뷰,
+오브젝트 탐색, 그리고 모든 화면에서 열리는 에이전트 패널. 서비스가 `/app` 에서 이 앱을 서빙하므로
+프런트엔드를 따로 호스팅하지 않습니다.
+
+Teams는 이 앱을 꽂는 껍데기입니다: 매니페스트의 탭이 `https://<host>/app/` 을 가리키고,
+채팅용 요약은 Adaptive Card(`POST /cards/impact`)로 나갑니다. 패키징은
+[`../teams_app/`](../teams_app/README.md) 참조.
 
 ```bash
 python tools/sap_impact/teams_app/build_package.py \
@@ -128,7 +135,12 @@ App Service 인증(Easy Auth)이 주입하는 `X-MS-CLIENT-PRINCIPAL-ID` 를 유
 | `healthCheck` | GET `/health` | 상태 확인 |
 | `renderImpactCard` | POST `/cards/impact` | 결과를 Adaptive Card로 렌더링 (봇·메시지 확장·Copilot 플러그인 템플릿) |
 
-탭 UI는 `GET /ui/tab.html`(개인·채널 탭), 설정 화면은 `GET /ui/config.html` 입니다.
+| `getDashboard` | GET `/dashboard` | 코드베이스 건강도·핫스팟·최근 변경 |
+| `buildCodeReview` | POST `/review` | 변경 diff + 라인별 위험 주석 + 오브젝트별 참조자 |
+| `chatWithAgent` | POST `/agent/chat` | Foundry 에이전트 대화 (SSE 스트리밍) |
+| `getAgentStatus` | GET `/agent/status` | 에이전트 설정 여부 |
+
+웹 앱은 `/app` 에서 서빙되며 딥링크는 SPA fallback 으로 처리됩니다.
 
 모든 영향 응답 항목은 `evidence`(파일·라인·원본 구문)를 포함합니다. 에이전트는 이 값을 인용해야
 하며, 근거 없이 오브젝트명을 언급하지 않도록 지시문에 명시돼 있습니다.
@@ -138,8 +150,9 @@ App Service 인증(Easy Auth)이 주입하는 `X-MS-CLIENT-PRINCIPAL-ID` 를 유
 ```bash
 cd code
 pip install -r tools/sap_impact/service/requirements.txt
+(cd tools/sap_impact/web && npm install && npm run build)   # 웹 앱 빌드 (최초 1회)
 SAP_IMPACT_PATH=tools/sap_impact/samples \
-  uvicorn tools.sap_impact.service.app:app --port 8080     # http://localhost:8080/docs
+  uvicorn tools.sap_impact.service.app:app --port 8080     # 앱 /app · API 문서 /docs
 
 SAP_IMPACT_PATH=tools/sap_impact/samples \
   python -m tools.sap_impact.service.test_service

@@ -89,12 +89,62 @@ def main() -> int:
     empty = client.post("/cards/impact", json={})
     check(empty.status_code == 400, "대상 없이 카드 요청 시 400")
 
-    print("\n[Teams 탭]")
-    tab = client.get("/ui/tab.html")
-    check(tab.status_code == 200 and "SAP 변경 영향 분석" in tab.text, "탭 페이지 서빙")
-    check("../impact" in tab.text and "../workspaces" in tab.text, "탭이 API 상대경로로 호출")
-    check(client.get("/ui/config.html").status_code == 200, "채널 탭 설정 페이지 서빙")
-    check(client.get("/tab", follow_redirects=False).status_code in (302, 307), "/tab 리다이렉트")
+    print("\n[대시보드 API]")
+    dash = client.get("/dashboard").json()
+    check(dash["objects"] > 10 and dash["references"] > 10, "코드베이스 규모 집계")
+    check(bool(dash["indexed_at"]), "인덱스 시각 제공 — 신뢰성 판단 근거")
+    check(dash["hotspots"] and dash["hotspots"][0]["dependents"] >= 5, "참조 집중 오브젝트 순위")
+    check(dash["blind_spot_total"] >= 1, "사각지대 집계")
+    check(dash["external_contract_objects"] >= 1, "외부 계약 오브젝트 집계")
+
+    print("\n[코드 리뷰 API]")
+    sample_file = os.path.join(SAMPLES, "src", "zcl_order_service.clas.abap")
+    original = open(sample_file, encoding="utf-8").read()
+    try:
+        with open(sample_file, "w", encoding="utf-8") as fh:
+            fh.write(original.replace(
+                "    mv_last_id = iv_order_id.",
+                "    mv_last_id = iv_order_id.\n"
+                "    UPDATE zorder_hdr SET status = 'P' WHERE order_id = @iv_order_id.\n"
+                "    CALL FUNCTION lv_dynamic.\n"
+                "    COMMIT WORK."))
+        res = client.post("/review", json={"hops": 3})
+        if res.status_code != 200:
+            check(False, f"리뷰 응답 {res.status_code} {res.text[:80]}")
+        else:
+            review = res.json()
+            target = next((f for f in review["files"] if f["object_key"] == "CLAS/ZCL_ORDER_SERVICE"), None)
+            check(target is not None, "변경 파일이 오브젝트로 매핑됨")
+            if target:
+                labels = {a["label"] for a in target["annotations"]}
+                check("DB 쓰기 추가" in labels, "추가된 DB 쓰기 라인 주석")
+                check("정적 분석 사각지대" in labels, "동적 호출 라인이 사각지대로 주석")
+                check("트랜잭션 확정/취소" in labels, "COMMIT WORK 라인 주석")
+                check(all(a["line"] > 0 for a in target["annotations"]), "주석에 라인 번호 존재")
+                check(target["added"] >= 3 and target["hunks"], "diff 파싱")
+                check(target["dependents"] and target["dependents"][0]["statement"],
+                      "변경 오브젝트의 참조자와 근거 구문")
+            check(review["impact"]["severity"] in ("MEDIUM", "HIGH", "CRITICAL"),
+                  f"리뷰 대상 위험도 ({review['impact']['severity']})")
+    finally:
+        with open(sample_file, "w", encoding="utf-8") as fh:
+            fh.write(original)
+
+    print("\n[웹 앱 서빙]")
+    web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "webdist")
+    if os.path.isdir(web_dir):
+        index = client.get("/app/")
+        check(index.status_code == 200 and "<div id=\"root\">" in index.text, "React 앱 index 서빙")
+        deep = client.get("/app/review")
+        check(deep.status_code == 200 and "<div id=\"root\">" in deep.text,
+              "딥링크가 SPA fallback 으로 처리됨")
+        check(client.get("/", follow_redirects=False).status_code in (302, 307), "/ 리다이렉트")
+    else:
+        print("  SKIP  webdist 없음 — cd web && npm install && npm run build 후 재실행")
+
+    print("\n[에이전트]")
+    status = client.get("/agent/status").json()
+    check("configured" in status and "agent_name" in status, "에이전트 설정 상태 조회")
 
     print("\n[Teams 앱 패키지]")
     import subprocess
@@ -117,7 +167,10 @@ def main() -> int:
                 manifest = json.loads(zf.read("manifest.json"))
             check(names == {"manifest.json", "color.png", "outline.png"}, "패키지 구성 파일")
             check("${{" not in json.dumps(manifest), "치환되지 않은 플레이스홀더 없음")
-            check(manifest["staticTabs"][0]["contentUrl"].endswith("/ui/tab.html"), "개인 탭 URL")
+            check(manifest["staticTabs"][0]["contentUrl"].endswith("/app/"),
+                  "개인 탭이 React 앱을 가리킴")
+            check(manifest["configurableTabs"][0]["configurationUrl"].endswith("/app/config"),
+                  "채널 탭 설정 URL")
             check("bots" in manifest and "composeExtensions" in manifest, "봇·메시지 확장 포함")
             check(manifest["validDomains"] == ["sap-impact.example.com"], "validDomains 설정")
         bad = subprocess.run(

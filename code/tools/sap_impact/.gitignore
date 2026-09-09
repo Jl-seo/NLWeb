@@ -1,0 +1,5 @@
+service/webdist/
+web/node_modules/
+web/dist/
+*.pyc
+__pycache__/

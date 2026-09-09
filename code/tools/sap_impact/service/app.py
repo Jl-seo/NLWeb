@@ -26,7 +26,7 @@ if __package__ in (None, ""):
     __package__ = "sap_impact.service"
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -34,6 +34,8 @@ from .. import model as M
 from .. import search as search_mod
 from .. import vcs
 from ..impact import analyze
+from . import agent as agent_mod
+from . import review as review_mod
 from .cards import impact_card
 from .workspace import WorkspaceRegistry, load_configs
 
@@ -41,7 +43,8 @@ API_KEY = os.environ.get("SAP_IMPACT_API_KEY", "")
 PUBLIC_BASE_URL = os.environ.get("SAP_IMPACT_PUBLIC_URL", "http://localhost:8080")
 MAX_IMPACTED = int(os.environ.get("SAP_IMPACT_MAX_IMPACTED", "60"))
 TEAMS_APP_ID = os.environ.get("SAP_IMPACT_TEAMS_APP_ID", "")
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+# Built React app (web/ -> npm run build). Absent during API-only development.
+WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "webdist")
 
 registry = WorkspaceRegistry(load_configs())
 
@@ -308,6 +311,147 @@ def analyze_changes(request: ChangeSetRequest) -> ImpactResponse:
     return response
 
 
+class DashboardResponse(BaseModel):
+    workspace: str
+    ready: bool
+    indexing: bool
+    indexed_at: str = ""
+    objects: int = 0
+    references: int = 0
+    unresolved: int = 0
+    blind_spot_objects: int = 0
+    blind_spot_total: int = 0
+    type_breakdown: List[Dict[str, Any]] = Field(default_factory=list)
+    hotspots: List[Dict[str, Any]] = Field(default_factory=list)
+    recent_commits: List[Dict[str, str]] = Field(default_factory=list)
+    external_contract_objects: int = 0
+
+
+@app.get("/dashboard", operation_id="getDashboard", response_model=DashboardResponse,
+         summary="코드베이스 건강도·핫스팟·최근 변경", tags=["analysis"],
+         dependencies=[Depends(require_key)])
+def dashboard(workspace: Optional[str] = Query(default=None),
+              hotspot_limit: int = Query(default=8, ge=1, le=50)) -> DashboardResponse:
+    state = _ready(workspace)
+    cb, graph = state.codebase, state.graph
+
+    counts: Dict[str, int] = {}
+    externals = 0
+    for obj in cb.objects.values():
+        counts[obj.obj_type] = counts.get(obj.obj_type, 0) + 1
+        if obj.obj_type in M.EXTERNAL_CONTRACT_TYPES:
+            externals += 1
+
+    hotspots = []
+    for key, fan_in in graph.hotspots(limit=hotspot_limit):
+        obj = cb.objects[key]
+        hotspots.append({
+            "object_key": key,
+            "object_type_label": M.type_label(obj.obj_type),
+            "description": obj.description or "",
+            "dependents": fan_in,
+            "blind_spots": len(cb.blind_spots.get(key, [])),
+        })
+
+    commits = []
+    try:
+        commits = [
+            {"commit": c.commit, "author": c.author, "date": c.date, "subject": c.subject}
+            for c in vcs.recent_commits(cb.root, limit=10)
+        ]
+    except Exception:  # not a git checkout: the rest of the dashboard still works
+        commits = []
+
+    return DashboardResponse(
+        workspace=state.config.id,
+        ready=state.ready,
+        indexing=state.indexing,
+        indexed_at=state.describe_indexed_at(),
+        objects=len(cb.objects),
+        references=len(cb.references),
+        unresolved=len(cb.unresolved),
+        blind_spot_objects=len(cb.blind_spots),
+        blind_spot_total=sum(len(v) for v in cb.blind_spots.values()),
+        type_breakdown=[{"type": t, "label": M.type_label(t), "count": c}
+                        for t, c in sorted(counts.items(), key=lambda x: -x[1])],
+        hotspots=hotspots,
+        recent_commits=commits,
+        external_contract_objects=externals,
+    )
+
+
+class ReviewRequest(BaseModel):
+    workspace: Optional[str] = None
+    revision_range: Optional[str] = Field(
+        default=None, description="git 리비전 범위. 생략 시 작업 트리")
+    hops: int = Field(default=3, ge=1, le=6)
+
+
+class ReviewResponse(BaseModel):
+    workspace: str
+    revision_range: str = ""
+    impact: ImpactResponse
+    files: List[Dict[str, Any]]
+
+
+@app.post("/review", operation_id="buildCodeReview", response_model=ReviewResponse,
+          summary="변경 diff + 라인별 위험 주석 + 오브젝트별 영향", tags=["analysis"],
+          dependencies=[Depends(require_key)])
+def build_review(request: ReviewRequest) -> ReviewResponse:
+    """
+    A diff that knows what it breaks: each changed file carries the objects that
+    depend on it and per-line annotations for constructs the reviewer must not
+    miss (new database writes, remote calls, dynamic calls that the graph cannot
+    follow).
+    """
+    state = _ready(request.workspace)
+    try:
+        changes = vcs.changed_files(state.codebase.root, rev_range=request.revision_range)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if not changes:
+        raise HTTPException(status_code=404, detail="변경된 파일이 없습니다.")
+
+    files = review_mod.build_review(state.codebase, state.graph, changes, request.revision_range)
+    keys, _ = vcs.map_files_to_objects(state.codebase, changes)
+    report = (analyze(state.codebase, state.graph, keys, max_hops=request.hops)
+              if keys else analyze(state.codebase, state.graph, [], max_hops=request.hops))
+
+    return ReviewResponse(
+        workspace=state.config.id,
+        revision_range=request.revision_range or "작업 트리",
+        impact=_to_response(state, report),
+        files=[_review_file_dict(f) for f in files],
+    )
+
+
+class ChatRequest(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = Field(
+        default=None, description="사용자가 보고 있는 화면 정보 (workspace, 대상 오브젝트 등)")
+
+
+@app.get("/agent/status", operation_id="getAgentStatus", summary="Foundry 에이전트 설정 상태",
+         tags=["agent"], dependencies=[Depends(require_key)])
+def agent_status() -> Dict[str, Any]:
+    return {"configured": agent_mod.configured(), "agent_name": agent_mod.AGENT_NAME}
+
+
+@app.post("/agent/chat", operation_id="chatWithAgent", summary="Foundry 에이전트 대화 (SSE 스트리밍)",
+          tags=["agent"], dependencies=[Depends(require_key)])
+def agent_chat(request: ChatRequest) -> StreamingResponse:
+    """
+    The browser never holds a Foundry credential: the container's identity does,
+    and the answer streams back as text.
+    """
+    return StreamingResponse(
+        agent_mod.stream_answer(request.message, request.conversation_id, request.context),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 class CardRequest(BaseModel):
     objects: List[str] = Field(default_factory=list, description="변경 오브젝트 (impact 모드)")
     prompt: Optional[str] = Field(default=None, description="업무 용어 질문 (ask 모드)")
@@ -342,19 +486,28 @@ def render_card(request: CardRequest) -> Dict[str, Any]:
     payload = report.model_dump()
     return {
         "contentType": "application/vnd.microsoft.card.adaptive",
-        "content": impact_card(payload, tab_url=f"{PUBLIC_BASE_URL}/ui/tab.html",
+        "content": impact_card(payload, tab_url=f"{PUBLIC_BASE_URL}/app/",
                                app_id=TEAMS_APP_ID),
     }
 
 
-@app.get("/tab", include_in_schema=False)
-def tab_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/ui/tab.html")
+@app.get("/", include_in_schema=False)
+def root_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/app/")
 
 
-if os.path.isdir(STATIC_DIR):
-    # Served from /ui so the page's relative fetches ("../impact") land on the API.
-    app.mount("/ui", StaticFiles(directory=STATIC_DIR, html=True), name="ui")
+if os.path.isdir(WEB_DIR):
+    @app.get("/app/{path:path}", include_in_schema=False)
+    def spa(path: str) -> FileResponse:
+        """
+        Single-page app: real files are served as-is, everything else falls back
+        to index.html so a deep link (/app/review, a Teams tab URL) survives a
+        full page load.
+        """
+        candidate = os.path.normpath(os.path.join(WEB_DIR, path))
+        if path and candidate.startswith(WEB_DIR) and os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(os.path.join(WEB_DIR, "index.html"))
 
 
 # ------------------------------------------------------------------- helpers
@@ -427,6 +580,23 @@ def _object_summary(state, key: str) -> ObjectSummary:
         tags=sorted(obj.tags),
         direct_dependents=state.graph.fan_in(key),
     )
+
+
+def _review_file_dict(f) -> Dict[str, Any]:
+    return {
+        "path": f.path,
+        "status": f.status,
+        "object_key": f.object_key,
+        "object_type_label": f.object_type_label,
+        "description": f.description,
+        "added": f.added,
+        "removed": f.removed,
+        "dependents": f.dependents,
+        "annotations": [{"line": a.line, "label": a.label, "severity": a.severity,
+                         "detail": a.detail} for a in f.annotations],
+        "hunks": [{"header": h.header, "old_start": h.old_start, "new_start": h.new_start,
+                   "lines": h.lines} for h in f.hunks],
+    }
 
 
 def _to_response(state, report) -> ImpactResponse:

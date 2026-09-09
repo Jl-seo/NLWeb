@@ -53,6 +53,9 @@ class WorkspaceState:
     def ready(self) -> bool:
         return self.codebase is not None and self.graph is not None
 
+    def describe_indexed_at(self) -> str:
+        return _iso(self.indexed_at)
+
 
 class WorkspaceRegistry:
     """Thread-safe registry. Indexing runs in a worker thread, queries never block."""

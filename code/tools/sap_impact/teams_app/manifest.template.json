@@ -20,21 +20,21 @@
   },
   "description": {
     "short": "SAP 코드 변경의 영향 범위와 회귀 테스트 범위를 근거와 함께 확인합니다.",
-    "full": "SAP(ABAP/BTP) 코드베이스의 참조 그래프를 기반으로 변경 영향 범위를 계산합니다. 모든 영향 항목에 파일·라인·원본 구문 근거가 표시되며, 동적 호출처럼 정적 분석이 볼 수 없는 지점은 사각지대로 별도 표기됩니다. 탭에서 전체 영향 목록·회귀 테스트 체크리스트·CSV 내보내기를 사용할 수 있습니다."
+    "full": "SAP(ABAP/BTP) 코드베이스의 참조 그래프를 기반으로 변경 영향 범위를 계산합니다. 대시보드에서 코드베이스 건강도와 참조 집중 오브젝트를, 영향 분석에서 변경의 파급 경로와 회귀 테스트 범위를, 코드 리뷰에서 변경 diff와 라인별 위험 주석을 확인할 수 있습니다. 모든 항목에 파일·라인·원본 구문 근거가 표시되며, 동적 호출처럼 정적 분석이 볼 수 없는 지점은 사각지대로 별도 표기됩니다."
   },
   "accentColor": "#5B5FC7",
   "staticTabs": [
     {
       "entityId": "sapImpact",
       "name": "영향 분석",
-      "contentUrl": "https://${{HOST}}/ui/tab.html",
-      "websiteUrl": "https://${{HOST}}/ui/tab.html",
+      "contentUrl": "https://${{HOST}}/app/",
+      "websiteUrl": "https://${{HOST}}/app/",
       "scopes": ["personal"]
     }
   ],
   "configurableTabs": [
     {
-      "configurationUrl": "https://${{HOST}}/ui/config.html",
+      "configurationUrl": "https://${{HOST}}/app/config",
       "canUpdateConfiguration": true,
       "scopes": ["team", "groupChat"]
     }
