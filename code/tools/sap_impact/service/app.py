@@ -26,17 +26,22 @@ if __package__ in (None, ""):
     __package__ = "sap_impact.service"
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .. import model as M
 from .. import search as search_mod
 from .. import vcs
 from ..impact import analyze
+from .cards import impact_card
 from .workspace import WorkspaceRegistry, load_configs
 
 API_KEY = os.environ.get("SAP_IMPACT_API_KEY", "")
 PUBLIC_BASE_URL = os.environ.get("SAP_IMPACT_PUBLIC_URL", "http://localhost:8080")
 MAX_IMPACTED = int(os.environ.get("SAP_IMPACT_MAX_IMPACTED", "60"))
+TEAMS_APP_ID = os.environ.get("SAP_IMPACT_TEAMS_APP_ID", "")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 registry = WorkspaceRegistry(load_configs())
 
@@ -54,16 +59,32 @@ app = FastAPI(
 # ------------------------------------------------------------------- security
 
 
-def require_key(x_api_key: Optional[str] = Header(default=None, alias="x-api-key")) -> None:
+def require_key(
+    x_api_key: Optional[str] = Header(default=None, alias="x-api-key"),
+    x_ms_client_principal_id: Optional[str] = Header(
+        default=None, alias="X-MS-CLIENT-PRINCIPAL-ID"),
+) -> None:
     """
-    API-key check for the Foundry 'custom keys' connection. When no key is
-    configured the service runs open, which is only appropriate behind App
-    Service authentication (Easy Auth) or a private network.
+    Two callers, two credentials.
+
+    Foundry sends the API key from its 'custom keys' connection. The Teams tab is
+    a browser and must never hold that key, so it is authenticated upstream by
+    App Service authentication (Easy Auth), which strips client-supplied
+    X-MS-CLIENT-PRINCIPAL-* headers and injects its own after validating the
+    Entra token. Trusting that header is therefore safe *only* behind Easy Auth
+    or an equivalent gateway -- see service/README.md before exposing the app
+    directly.
+
+    With no key configured the service runs open, which is appropriate only on a
+    private network or during local development.
     """
     if not API_KEY:
         return
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="invalid or missing x-api-key")
+    if x_api_key == API_KEY:
+        return
+    if x_ms_client_principal_id:
+        return
+    raise HTTPException(status_code=401, detail="invalid or missing credentials")
 
 
 # --------------------------------------------------------------------- models
@@ -285,6 +306,55 @@ def analyze_changes(request: ChangeSetRequest) -> ImpactResponse:
         response.severity_reasons.append(
             f"오브젝트로 매핑되지 않은 변경 파일 {len(unmapped)}건 (분석 범위에서 제외)")
     return response
+
+
+class CardRequest(BaseModel):
+    objects: List[str] = Field(default_factory=list, description="변경 오브젝트 (impact 모드)")
+    prompt: Optional[str] = Field(default=None, description="업무 용어 질문 (ask 모드)")
+    revision_range: Optional[str] = Field(default=None, description="git 범위 (changes 모드)")
+    workspace: Optional[str] = None
+    hops: int = Field(default=3, ge=1, le=6)
+
+
+@app.post("/cards/impact", operation_id="renderImpactCard",
+          summary="영향 분석 결과를 Adaptive Card로 렌더링", tags=["ui"],
+          dependencies=[Depends(require_key)])
+def render_card(request: CardRequest) -> Dict[str, Any]:
+    """
+    Same analysis, chat-shaped: a summary card with the decision-grade facts and
+    a deep link into the tab for the full table. Bots and message extensions post
+    this; a Copilot API plugin can use it as a dynamic response template.
+    """
+    if request.prompt:
+        report = analyze_by_prompt(PromptRequest(prompt=request.prompt, workspace=request.workspace,
+                                                 hops=request.hops, select=2))
+    elif request.revision_range is not None and not request.objects:
+        report = analyze_changes(ChangeSetRequest(workspace=request.workspace,
+                                                  revision_range=request.revision_range,
+                                                  hops=request.hops))
+    elif request.objects:
+        report = analyze_impact(ImpactRequest(objects=request.objects, workspace=request.workspace,
+                                              hops=request.hops))
+    else:
+        raise HTTPException(status_code=400,
+                            detail="objects, prompt, revision_range 중 하나는 지정해야 합니다.")
+
+    payload = report.model_dump()
+    return {
+        "contentType": "application/vnd.microsoft.card.adaptive",
+        "content": impact_card(payload, tab_url=f"{PUBLIC_BASE_URL}/ui/tab.html",
+                               app_id=TEAMS_APP_ID),
+    }
+
+
+@app.get("/tab", include_in_schema=False)
+def tab_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/ui/tab.html")
+
+
+if os.path.isdir(STATIC_DIR):
+    # Served from /ui so the page's relative fetches ("../impact") land on the API.
+    app.mount("/ui", StaticFiles(directory=STATIC_DIR, html=True), name="ui")
 
 
 # ------------------------------------------------------------------- helpers

@@ -75,6 +75,57 @@ def main() -> int:
     check(client.post("/ask", json={"prompt": "존재하지않는업무용어xyz"}).status_code == 404,
           "검색 실패 시 404")
 
+    print("\n[Adaptive Card]")
+    card_response = client.post("/cards/impact", json={"objects": ["ZORDER_HDR"], "hops": 4}).json()
+    card = card_response["content"]
+    check(card_response["contentType"] == "application/vnd.microsoft.card.adaptive",
+          "Teams 카드 contentType")
+    check(card["version"] == "1.5" and card["type"] == "AdaptiveCard", "Adaptive Card 1.5")
+    rendered = json.dumps(card, ensure_ascii=False)
+    check("위험도 높음" in rendered, "위험도 배지 포함")
+    check("사각지대" in rendered, "사각지대 경고 포함")
+    check("ZFM_ORDER_POST" in rendered, "영향 오브젝트 인용 포함")
+    check(bool(card.get("actions")), "탭으로 이동하는 액션 포함")
+    empty = client.post("/cards/impact", json={})
+    check(empty.status_code == 400, "대상 없이 카드 요청 시 400")
+
+    print("\n[Teams 탭]")
+    tab = client.get("/ui/tab.html")
+    check(tab.status_code == 200 and "SAP 변경 영향 분석" in tab.text, "탭 페이지 서빙")
+    check("../impact" in tab.text and "../workspaces" in tab.text, "탭이 API 상대경로로 호출")
+    check(client.get("/ui/config.html").status_code == 200, "채널 탭 설정 페이지 서빙")
+    check(client.get("/tab", follow_redirects=False).status_code in (302, 307), "/tab 리다이렉트")
+
+    print("\n[Teams 앱 패키지]")
+    import subprocess
+    import sys as _sys
+    import tempfile
+    import uuid
+    import zipfile
+    teams_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "teams_app")
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "pkg.zip")
+        proc = subprocess.run(
+            [_sys.executable, os.path.join(teams_dir, "build_package.py"),
+             "--host", "sap-impact.example.com", "--app-id", str(uuid.uuid4()),
+             "--developer", "테스트", "--bot-id", str(uuid.uuid4()), "--out", out],
+            capture_output=True, text=True)
+        check(proc.returncode == 0, f"패키지 빌드 성공 {proc.stderr.strip()[:80]}")
+        if proc.returncode == 0:
+            with zipfile.ZipFile(out) as zf:
+                names = set(zf.namelist())
+                manifest = json.loads(zf.read("manifest.json"))
+            check(names == {"manifest.json", "color.png", "outline.png"}, "패키지 구성 파일")
+            check("${{" not in json.dumps(manifest), "치환되지 않은 플레이스홀더 없음")
+            check(manifest["staticTabs"][0]["contentUrl"].endswith("/ui/tab.html"), "개인 탭 URL")
+            check("bots" in manifest and "composeExtensions" in manifest, "봇·메시지 확장 포함")
+            check(manifest["validDomains"] == ["sap-impact.example.com"], "validDomains 설정")
+        bad = subprocess.run(
+            [_sys.executable, os.path.join(teams_dir, "build_package.py"),
+             "--host", "https://x.com", "--app-id", str(uuid.uuid4()), "--out", out],
+            capture_output=True, text=True)
+        check(bad.returncode != 0, "스킴 포함 host 는 빌드 거부")
+
     print("\n[Foundry OpenAPI 스키마]")
     spec = build("https://example.azurewebsites.net", api_key_header=True)
     check(spec["openapi"].startswith("3.0"), f"OpenAPI 3.0 ({spec['openapi']})")

@@ -97,6 +97,23 @@ M365 서비스에서 처리·저장됩니다. SAP 소스 코드 조각이 응답
 분류·리전 정책에 맞는지 게시 전에 확인해야 합니다. 필요하면 응답 근거의 코드 구문 노출 범위를
 줄이도록 `SAP_IMPACT_MAX_IMPACTED` 와 지시문을 조정하십시오.
 
+## Teams 앱 (탭 + 카드)
+
+챗 에이전트만으로는 영향 목록·회귀 테스트 체크리스트를 담을 수 없습니다. 요약은 Adaptive Card,
+전체 목록은 Teams 탭으로 나누는 패키지가 [`../teams_app/`](../teams_app/README.md) 에 있습니다.
+서비스가 탭 UI(`/ui/tab.html`)와 카드(`POST /cards/impact`)를 함께 제공하므로 추가 호스팅은
+필요 없습니다.
+
+```bash
+python tools/sap_impact/teams_app/build_package.py \
+    --host <서비스 FQDN> --app-id <새 GUID> --developer "회사명"
+```
+
+탭은 브라우저이므로 API 키를 가질 수 없습니다. 서비스는 `x-api-key`(Foundry) 외에
+App Service 인증(Easy Auth)이 주입하는 `X-MS-CLIENT-PRINCIPAL-ID` 를 유효한 자격 증명으로
+인정합니다. **Easy Auth 같은 게이트웨이 없이 공개 노출하면 이 헤더를 위조할 수 있으므로**
+탭을 사용할 때는 반드시 앞단에 인증을 두십시오.
+
 ## 엔드포인트
 
 | operationId | 메서드 | 용도 |
@@ -109,6 +126,9 @@ M365 서비스에서 처리·저장됩니다. SAP 소스 코드 조각이 응답
 | `listWorkspaces` | GET `/workspaces` | 코드베이스·인덱싱 상태 |
 | `reindexWorkspace` | POST `/workspaces/{id}/reindex` | 재인덱싱 (CI에서 호출) |
 | `healthCheck` | GET `/health` | 상태 확인 |
+| `renderImpactCard` | POST `/cards/impact` | 결과를 Adaptive Card로 렌더링 (봇·메시지 확장·Copilot 플러그인 템플릿) |
+
+탭 UI는 `GET /ui/tab.html`(개인·채널 탭), 설정 화면은 `GET /ui/config.html` 입니다.
 
 모든 영향 응답 항목은 `evidence`(파일·라인·원본 구문)를 포함합니다. 에이전트는 이 값을 인용해야
 하며, 근거 없이 오브젝트명을 언급하지 않도록 지시문에 명시돼 있습니다.
