@@ -1,0 +1,108 @@
+# SAP 변경 영향 분석 (sap_impact)
+
+SAP 개발 코드가 저장된 디렉토리를 주면, **무엇이 영향받는지**를 참조 그래프로 계산하고
+**왜·얼마나 위험한지**를 LLM이 설명하는 CLI 도구입니다.
+
+## 왜 2계층인가
+
+"디렉토리를 통째로 LLM에 넣고 영향도를 물어본다"는 접근은 두 가지 이유로 실패합니다.
+수만 개 오브젝트가 컨텍스트에 들어가지 않고, 모델이 존재하지 않는 오브젝트명을 그럴듯하게
+지어냅니다. 영향 분석은 한 번만 틀려도 신뢰를 잃습니다.
+
+| 계층 | 담당 | 구현 |
+|---|---|---|
+| ① 결정론적 참조 그래프 | **무엇이** 영향받는가 (사실) | `scanner.py`, `extract_abap.py`, `extract_btp.py`, `graph.py` |
+| ② 규칙 기반 위험도 | **얼마나** 위험한가 (재현 가능한 판정) | `impact.py` |
+| ③ LLM 설명 | **왜**, 무엇을 테스트해야 하는가 (해석) | `explain.py` |
+
+①의 모든 엣지는 파일·라인·원본 구문을 근거로 가지고 있습니다. ③은 ①이 만든 **닫힌 목록만**
+보며, 목록에 없는 오브젝트명을 만들어내지 말라는 제약을 프롬프트에 명시합니다.
+
+## 지원 범위
+
+- **abapGit export** — 파일명 규칙(`zcl_x.clas.abap`, `zfg_y.fugr.zfm_z.abap`, `ztab.tabl.xml`)으로
+  오브젝트 타입을 결정론적으로 분류. 클래스/인터페이스/프로그램/인클루드/펑션그룹/펑션모듈/
+  DDIC(테이블·구조·데이터엘리먼트·도메인·테이블타입)/CDS/트랜잭션/메시지클래스/인핸스먼트 등
+- **SE38/SE80 텍스트 덤프** — 파일명 규칙이 없으면 소스 헤더(`REPORT`, `FUNCTION-POOL`,
+  `CLASS ... DEFINITION`)로 타입 추론
+- **SAP BTP / CAP / Fiori** — CAP CDS(`using`, `projection on`), 서비스 핸들러(JS/TS),
+  UI5(manifest routing, `controllerName`, fragment, `sap.ui.define` 의존성)
+- **ABAP → CDS → OData → UI5** 경로가 하나의 그래프로 연결됩니다. 수작업 영향 분석이 가장 자주
+  놓치는 구간입니다.
+
+추출하는 ABAP 참조: `CALL FUNCTION`, `PERFORM ... IN PROGRAM`, `SUBMIT`, `INCLUDE`,
+`CALL TRANSACTION`, `INHERITING FROM`, `INTERFACES`, `TYPE REF TO`, `CREATE OBJECT`, `NEW`,
+정적 호출(`=>`), 인터페이스 호출(`~`), `SELECT`/`JOIN`/`INSERT`/`UPDATE`/`MODIFY`/`DELETE`,
+`TABLES`, `TYPE`/`LIKE`, `MESSAGE`, `AUTHORITY-CHECK`, `GET BADI`, 스마트폼 `FORMNAME`,
+`ENHANCEMENT-POINT`.
+
+## 사용법
+
+저장소의 `code/` 디렉토리에서 실행합니다 (`--explain` 사용 시 NLWeb의 LLM 계층을 재사용).
+
+```bash
+# 1. 스캔 — 오브젝트 분류, 참조 집중 오브젝트(변경 시 파급이 큰 순서)
+python -m tools.sap_impact.cli scan /path/to/sap-code --index /tmp/sap.json
+
+# 2. 지정 오브젝트 변경의 영향
+python -m tools.sap_impact.cli impact /path/to/sap-code --objects ZORDER_HDR --hops 3
+
+# 3. 수정내역(git) 기반 — abapGit 미러의 커밋 범위로 변경 오브젝트를 자동 식별
+python -m tools.sap_impact.cli changes /path/to/sap-code --rev main..feature --history 5
+
+# 4. 자연어 프롬프트 — 업무 용어로 대상을 찾아 영향 분석
+python -m tools.sap_impact.cli ask /path/to/sap-code "구매요청 승인 로직 고치면 뭐가 영향받아?"
+
+# 5. 사용처 조회 (SE84 where-used 대응)
+python -m tools.sap_impact.cli where-used /path/to/sap-code --object ZCL_ORDER_SERVICE
+
+# LLM 설명 추가 (config/config_llm.yaml 의 프로바이더 사용)
+python -m tools.sap_impact.cli impact /path/to/sap-code --objects ZORDER_HDR --explain
+# 실제 호출 없이 프롬프트만 확인
+python -m tools.sap_impact.cli impact /path/to/sap-code --objects ZORDER_HDR --explain --dry-run
+```
+
+주요 옵션: `--hops`(추적 깊이, 기본 3) `--index`(스캔 캐시 재사용) `--brief`(근거 코드 생략)
+`--json`(결과 저장) `--provider` `--level`.
+
+## 출력 해석
+
+- **위험도** — `LOW/MEDIUM/HIGH/CRITICAL`. 영향 건수, DDIC 변경 여부, 외부 계약 도달,
+  RFC/COMMIT 포함, 고참조 오브젝트 여부를 규칙으로 합산합니다. 판정 근거가 항상 함께 출력되므로
+  고객이 규칙 자체를 놓고 논의할 수 있습니다.
+- **영향 오브젝트** — 홉 수, 참조 경로, 그 엣지를 만든 실제 코드 라인.
+- **외부 계약 도달** — 펑션모듈(RFC), 트랜잭션, IDoc, OData 서비스 등 연계 시스템·사용자에게
+  노출되는 지점. 여기 닿으면 릴리스 리스크입니다.
+- **회귀 테스트 후보** — 사람이 실행할 수 있는 단위(트랜잭션/리포트/서비스/화면)로 환산.
+- **정적 분석 사각지대** — `CALL FUNCTION lv_name`, `SELECT ... FROM (lv_tab)`, RTTI 등
+  **정적으로 알 수 없는 호출**. 그래프가 불완전한 지점을 숨기지 않고 명시합니다.
+
+## 한계
+
+- 정적 분석이므로 동적 호출은 원리상 잡히지 않습니다(위 사각지대로 보고).
+- 커스터마이징 테이블 기반 분기, BAdI 필터, 확장 스팟 구현은 코드만으로 판정 불가합니다.
+- 표준 SAP 오브젝트(`CL_*`, `MARA`, `BAPI_*`)는 그래프 노드가 아니라 '미해결 참조'로 집계됩니다.
+- 시스템 내부의 SE84 where-used와 달리 **디렉토리에 있는 코드만** 봅니다. 디렉토리가 전체
+  커스텀 코드를 담고 있는지는 별도 확인이 필요합니다.
+
+## 테스트
+
+```bash
+python -m tools.sap_impact.test_sap_impact
+```
+
+`samples/` 에는 ABAP(테이블·데이터엘리먼트·클래스·인터페이스·펑션그룹·리포트·CDS·트랜잭션)과
+BTP(CAP 스키마·서비스·핸들러, UI5 manifest·뷰·컨트롤러·프래그먼트)가 실제 참조 관계를 갖도록
+구성돼 있어, 스캔 한 번으로 전 구간 동작을 확인할 수 있습니다.
+
+## 운영 전개 시 (Azure)
+
+PoC는 단일 프로세스 CLI입니다. 실제 규모로 올릴 때의 매핑:
+
+| PoC | 운영 |
+|---|---|
+| 디렉토리 스캔 | abapGit 미러 → Azure DevOps/GitHub 리포지토리, 커밋 훅으로 증분 스캔 |
+| `index.json` | Azure AI Search (코드 청크 하이브리드 검색) + Azure SQL/Cosmos DB (참조 엣지) |
+| `search.py` 렉시컬 매칭 | Azure AI Search 하이브리드(벡터+키워드) 검색 |
+| `explain.py` | Azure OpenAI / Azure AI Foundry |
+| CLI | Copilot Studio 에이전트 (개발자·현업 대화형 진입점) |

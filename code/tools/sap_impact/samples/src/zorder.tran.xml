@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml"><asx:values>
+  <TSTC><TCODE>ZORDER</TCODE><PGMNA>ZMM_PR_APPROVE</PGMNA></TSTC>
+  <TSTCT><TTEXT>구매요청 승인</TTEXT></TSTCT>
+ </asx:values></asx:abap>
+</abapGit>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml"><asx:values>
+  <DD04V><ROLLNAME>ZDE_ORDER_ID</ROLLNAME><DOMNAME>ZDO_ORDER_ID</DOMNAME>
+   <DDTEXT>구매오더 번호</DDTEXT></DD04V>
+ </asx:values></asx:abap>
+</abapGit>
