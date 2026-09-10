@@ -142,6 +142,14 @@ def main() -> int:
     else:
         print("  SKIP  webdist 없음 — cd web && npm install && npm run build 후 재실행")
 
+    print("\n[장애 역추적 · 기간 요약 API]")
+    inc = client.post("/incident", json={"symptom": "ZORDER 오류", "since": "3650 days ago"}).json()
+    check(inc["candidates"] and inc["candidates"][0]["commits"], "역추적 후보 + 커밋 메타")
+    check("notes" in inc and "blind_spots_on_path" in inc, "사각지대·안내 필드")
+    period = client.get("/summary", params={"since": "3650 days ago"}).json()
+    check(period["commits"] >= 1 and "by_severity" in period, "기간 요약 집계")
+    check(period["high_risk"], "고위험 커밋 목록")
+
     print("\n[에이전트]")
     status = client.get("/agent/status").json()
     check("configured" in status and "agent_name" in status, "에이전트 설정 상태 조회")

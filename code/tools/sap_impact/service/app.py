@@ -34,6 +34,8 @@ from .. import model as M
 from .. import search as search_mod
 from .. import vcs
 from ..impact import analyze
+from .. import incident as incident_mod
+from .. import summary as summary_mod
 from . import agent as agent_mod
 from . import review as review_mod
 from .cards import impact_card
@@ -423,6 +425,45 @@ def build_review(request: ReviewRequest) -> ReviewResponse:
         impact=_to_response(state, report),
         files=[_review_file_dict(f) for f in files],
     )
+
+
+class IncidentRequest(BaseModel):
+    symptom: str = Field(description="장애 증상: 트랜잭션·프로그램·테이블명 또는 문장 (예: 'ZORDER 화면 오류')")
+    since: str = Field(default="14 days ago", description="git --since 표현 (예: '14 days ago', '2026-09-01')")
+    workspace: Optional[str] = None
+    max_hops: int = Field(default=4, ge=1, le=6, description="증상 오브젝트에서 의존 방향으로 추적할 깊이")
+    limit: int = Field(default=10, ge=1, le=50)
+
+
+@app.post("/incident", operation_id="traceIncident",
+          summary="장애 증상에서 최근 변경으로 역추적 — 원인 후보를 순위로", tags=["analysis"],
+          dependencies=[Depends(require_key)])
+def trace_incident(request: IncidentRequest) -> Dict[str, Any]:
+    """
+    Reverse of impact analysis: given something that is failing, which recent
+    change could have caused it. Candidates carry commit, author, date and the
+    dependency path from the symptom; dynamic calls on that path are reported so
+    the list is never presented as exhaustive.
+    """
+    state = _ready(request.workspace)
+    report = incident_mod.trace(state.codebase, state.graph, request.symptom,
+                                since=request.since, max_hops=request.max_hops,
+                                limit=request.limit)
+    return {"workspace": state.config.id, **report.to_dict()}
+
+
+@app.get("/summary", operation_id="getPeriodSummary",
+         summary="기간 내 변경 관리 요약 — 건수·위험도·외부계약·핫스팟", tags=["analysis"],
+         dependencies=[Depends(require_key)])
+def period_summary(
+    since: str = Query(default="7 days ago", description="git --since 표현"),
+    workspace: Optional[str] = Query(default=None),
+    top: int = Query(default=5, ge=1, le=20, description="고위험 커밋 표시 개수"),
+    include_all: bool = Query(default=False, description="모든 커밋의 요약 포함"),
+) -> Dict[str, Any]:
+    state = _ready(workspace)
+    result = summary_mod.summarize(state.codebase, state.graph, since=since, top=top)
+    return {"workspace": state.config.id, **result.to_dict(include_all=include_all)}
 
 
 class ChatRequest(BaseModel):

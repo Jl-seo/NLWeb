@@ -82,6 +82,31 @@ def main() -> int:
     hits = [c.key for c in resolve(cb, "구매요청 승인 로직 고치면 뭐가 영향받아?", limit=5)]
     check("TRAN/ZORDER" in hits[:2], f"업무 용어로 오브젝트 검색 (상위: {hits[:2]})")
 
+    print("\n[장애 역추적]")
+    from .incident import trace
+    inc = trace(cb, graph, "ZORDER 트랜잭션 오류", since="3650 days ago")
+    check(any(o["object_key"] == "TRAN/ZORDER" for o in inc.symptom_objects), "증상이 트랜잭션으로 해석")
+    check(inc.commits_in_window >= 1, f"기간 내 커밋 {inc.commits_in_window}건 수집")
+    check(inc.candidates and inc.candidates[0].commits[0]["commit"], "후보에 커밋 메타데이터")
+    check(any(c.hops == 0 for c in inc.candidates), "증상 오브젝트 자체 변경이 0홉 후보")
+    check(all(c.path[0] in [o["object_key"] for o in inc.symptom_objects] or c.hops == 0
+              for c in inc.candidates), "경로가 증상 오브젝트에서 시작")
+    check(inc.blind_spots_on_path and any("원인일 수 있" in n for n in inc.notes),
+          "경로상 동적 호출을 사각지대로 경고")
+    empty = trace(cb, graph, "존재하지않는증상xyz", since="3650 days ago")
+    check(not empty.candidates and empty.notes, "해석 불가 증상은 안내와 함께 빈 결과")
+
+    print("\n[기간 요약]")
+    from .summary import summarize
+    period = summarize(cb, graph, since="3650 days ago")
+    check(period.commits >= 1 and period.commits_with_sap_objects >= 1, "커밋 집계")
+    check(sum(period.by_severity.values()) == period.commits_with_sap_objects, "위험도 분포 합계 일치")
+    check(period.high_risk and period.high_risk[0].changed_objects, "고위험 커밋에 변경 오브젝트")
+    check(any(h["object_key"] == "TABL/ZORDER_HDR" for h in period.hotspots_touched),
+          "핫스팟 변경 감지")
+    none = summarize(cb, graph, since="2050-01-01")  # git 날짜 파서 범위 안의 미래
+    check(none.commits == 0 and none.notes, "커밋 없는 기간은 안내")
+
     print("\n[사각지대 미보고 방지]")
     check(cb.blind_spots, "동적 호출이 사각지대로 수집됨")
 

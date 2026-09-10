@@ -56,6 +56,12 @@ python -m tools.sap_impact.cli ask /path/to/sap-code "구매요청 승인 로직
 # 5. 사용처 조회 (SE84 where-used 대응)
 python -m tools.sap_impact.cli where-used /path/to/sap-code --object ZCL_ORDER_SERVICE
 
+# 6. 장애 역추적 — 증상에서 최근 변경으로 거꾸로. 원인 후보를 커밋·작성자·경로와 함께 순위로
+python -m tools.sap_impact.cli incident /path/to/sap-code "ZORDER 화면 오류" --since "14 days ago"
+
+# 7. 기간 요약 — 변경 건수·위험도 분포·외부 계약 도달·핫스팟 변경·고위험 커밋 (보고용)
+python -m tools.sap_impact.cli summary /path/to/sap-code --since "7 days ago"
+
 # LLM 설명 추가 (config/config_llm.yaml 의 프로바이더 사용)
 python -m tools.sap_impact.cli impact /path/to/sap-code --objects ZORDER_HDR --explain
 # 실제 호출 없이 프롬프트만 확인
@@ -64,6 +70,20 @@ python -m tools.sap_impact.cli impact /path/to/sap-code --objects ZORDER_HDR --e
 
 주요 옵션: `--hops`(추적 깊이, 기본 3) `--index`(스캔 캐시 재사용) `--brief`(근거 코드 생략)
 `--json`(결과 저장) `--provider` `--level`.
+
+## 개발 리더의 4가지 질문에 대응
+
+| 순간 | 질문 | 명령 / API |
+|---|---|---|
+| 전송 승인 | "이거 나가도 돼?" | `changes` / `analyzeChangeSet` |
+| 장애 발생 | "어제 ZORDER 죽었는데 최근 변경 중 뭐 때문이야?" | `incident` / `traceIncident` |
+| 인수인계·문의 | "이거 어디서 쓰여? 뭘 건드리면 어디까지 가?" | `where-used`, `impact` / `whereUsed`, `analyzeImpact` |
+| 보고 | "이번 주 변경 관리 어땠어?" | `summary` / `getPeriodSummary` |
+
+장애 역추적은 영향 분석의 역방향입니다. 증상 오브젝트가 **의존하는** 것들(정방향 closure)과
+기간 내 변경 오브젝트의 교집합을 증상까지의 거리·최근성·DDIC 여부로 순위 매깁니다.
+경로에 동적 호출이 있으면 "후보 밖의 변경도 원인일 수 있다"고 명시합니다 — 후보 목록은 순위이지
+원인 확정이 아닙니다.
 
 ## 출력 해석
 

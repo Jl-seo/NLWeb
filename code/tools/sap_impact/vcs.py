@@ -83,6 +83,47 @@ def file_history(root: str, path: str, limit: int = 10) -> List[FileChange]:
     return history
 
 
+class Commit(NamedTuple):
+    commit: str
+    author: str
+    date: str
+    subject: str
+    files: List[FileChange]
+
+
+def commits_since(root: str, since: str, limit: int = 200) -> List[Commit]:
+    """
+    Commits in a time window with the files each one touched. `since` is any
+    git --since expression ("14 days ago", "2026-09-01"). Paths are relative to
+    `root`, so a code directory nested in a bigger repository still maps onto
+    scanner paths.
+    """
+    code, out = _git(root, [
+        "log", f"--since={since}", f"-{limit}", "--date=short", "--name-status",
+        "--relative", "--pretty=format:%x1e%h%x09%an%x09%ad%x09%s", "--", ".",
+    ])
+    if code != 0:
+        return []
+    commits: List[Commit] = []
+    for block in out.split("\x1e"):
+        block = block.strip()
+        if not block:
+            continue
+        head, *rest = block.splitlines()
+        fields = head.split("\t")
+        if len(fields) != 4:
+            continue
+        files: List[FileChange] = []
+        for line in rest:
+            parts = line.split("\t")
+            if len(parts) >= 2 and parts[0]:
+                files.append(FileChange(status=parts[0][0], path=parts[-1], commit=fields[0],
+                                        author=fields[1], date=fields[2], subject=fields[3]))
+        commits.append(Commit(commit=fields[0], author=fields[1], date=fields[2],
+                              subject=fields[3], files=files))
+    return commits
+
+
 def recent_commits(root: str, limit: int = 15) -> List[FileChange]:
     """Recent commits on the current branch: the change feed the dashboard shows."""
     code, out = _git(root, [

@@ -21,8 +21,10 @@ if __package__ in (None, ""):  # allow `python cli.py` from inside the folder
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     __package__ = "sap_impact"
 
+from . import incident as incident_mod
 from . import model as M
 from . import search as search_mod
+from . import summary as summary_mod
 from . import vcs
 from .graph import Graph
 from .impact import analyze, ImpactReport
@@ -311,6 +313,73 @@ def cmd_where_used(args) -> int:
     return 0
 
 
+def cmd_incident(args) -> int:
+    cb = _load_codebase(args)
+    graph = Graph(cb)
+    report = incident_mod.trace(cb, graph, args.symptom, since=args.since,
+                                max_hops=args.hops, limit=args.limit)
+    print()
+    print("=" * 78)
+    print(f" 장애 역추적   증상: {report.symptom}   기간: {report.since}")
+    print("=" * 78)
+    print("\n[증상 → 오브젝트]")
+    for item in report.symptom_objects:
+        print(f"  {item['object_key']:<36} {item['matched_because']}")
+    print(f"\n[기간 내 변경] 커밋 {report.commits_in_window}건, 변경 오브젝트 {report.changed_objects_in_window}건")
+    print(f"\n[원인 후보] {len(report.candidates)}건 (관련 없는 변경 {report.unrelated_changes}건 제외)")
+    for cand in report.candidates:
+        latest = cand.commits[0]
+        print(f"  {cand.score:>5.1f}  [{cand.hops}홉] {cand.object_key:<32} {cand.object_type_label}")
+        print(f"         경로: {' -> '.join(cand.path)}")
+        print(f"         변경: {latest['commit']} {latest['date']} {latest['author']} — {latest['subject'][:60]}")
+        for reason in cand.reasons:
+            print(f"         · {reason}")
+    for note in report.notes:
+        print(f"\n  ! {note}")
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as fh:
+            json.dump(report.to_dict(), fh, ensure_ascii=False, indent=1)
+        print(f"\n[출력] {args.json}")
+    return 0
+
+
+def cmd_summary(args) -> int:
+    cb = _load_codebase(args)
+    graph = Graph(cb)
+    result = summary_mod.summarize(cb, graph, since=args.since, top=args.top)
+    print()
+    print("=" * 78)
+    print(f" 변경 관리 요약   기간: {result.since}")
+    print("=" * 78)
+    print(f"\n  커밋 {result.commits}건 (SAP 오브젝트 포함 {result.commits_with_sap_objects}건) · "
+          f"변경 오브젝트 {result.changed_objects}건")
+    print("  위험도: " + "  ".join(f"{k} {v}" for k, v in result.by_severity.items()))
+    if result.external_contracts_touched:
+        print(f"  외부 계약 도달: {', '.join(result.external_contracts_touched)}")
+    if result.hotspots_touched:
+        print("  핫스팟 변경: " + ", ".join(
+            f"{h['object_key']}(참조자 {h['dependents']})" for h in result.hotspots_touched))
+    print(f"  사각지대 포함 변경: {result.blind_spots_touched}건")
+    print("\n[타입별]")
+    for t in result.by_type:
+        print(f"  {t['label']:<18} {t['count']:>4}")
+    print("\n[작성자별]")
+    for a in result.by_author:
+        print(f"  {a['author']:<20} 커밋 {a['commits']:>3}  고위험 {a['high_risk']:>3}")
+    print(f"\n[고위험 커밋] 상위 {len(result.high_risk)}건")
+    for d in result.high_risk:
+        print(f"  {d.commit} {d.date} {d.author:<14} {d.severity:<8} 영향 {d.impacted_count:>3}  "
+              f"{d.subject[:50]}")
+        print(f"         변경: {', '.join(d.changed_objects[:5])}{' ...' if len(d.changed_objects) > 5 else ''}")
+    for note in result.notes:
+        print(f"\n  ! {note}")
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as fh:
+            json.dump(result.to_dict(include_all=True), fh, ensure_ascii=False, indent=1)
+        print(f"\n[출력] {args.json}")
+    return 0
+
+
 # ---------------------------------------------------------------------- main
 
 
@@ -358,6 +427,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("--top", type=int, default=8, help="후보 표시 개수")
     p_ask.add_argument("--select", type=int, default=2, help="상위 N건을 분석 대상으로 사용")
     p_ask.set_defaults(func=cmd_ask)
+
+    p_inc = sub.add_parser("incident", help="장애 증상에서 최근 변경으로 역추적")
+    common(p_inc)
+    p_inc.add_argument("symptom", help="예: 'ZORDER 화면 오류', 'ZMM_PR_APPROVE 덤프'")
+    p_inc.add_argument("--since", default="14 days ago", help="git --since 표현 (기본 14 days ago)")
+    p_inc.add_argument("--limit", type=int, default=10)
+    p_inc.set_defaults(func=cmd_incident)
+
+    p_sum = sub.add_parser("summary", help="기간 내 변경 관리 요약")
+    common(p_sum)
+    p_sum.add_argument("--since", default="7 days ago", help="git --since 표현 (기본 7 days ago)")
+    p_sum.add_argument("--top", type=int, default=5)
+    p_sum.set_defaults(func=cmd_summary)
 
     p_where = sub.add_parser("where-used", help="단일 오브젝트의 사용처 목록 (SE84 대응)")
     common(p_where)

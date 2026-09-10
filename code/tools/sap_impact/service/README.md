@@ -135,6 +135,8 @@ App Service 인증(Easy Auth)이 주입하는 `X-MS-CLIENT-PRINCIPAL-ID` 를 유
 | `healthCheck` | GET `/health` | 상태 확인 |
 | `renderImpactCard` | POST `/cards/impact` | 결과를 Adaptive Card로 렌더링 (봇·메시지 확장·Copilot 플러그인 템플릿) |
 
+| `traceIncident` | POST `/incident` | 장애 증상 → 최근 변경 역추적, 원인 후보 순위 |
+| `getPeriodSummary` | GET `/summary` | 기간 내 변경 관리 요약 (보고용) |
 | `getDashboard` | GET `/dashboard` | 코드베이스 건강도·핫스팟·최근 변경 |
 | `buildCodeReview` | POST `/review` | 변경 diff + 라인별 위험 주석 + 오브젝트별 참조자 |
 | `chatWithAgent` | POST `/agent/chat` | Foundry 에이전트 대화 (SSE 스트리밍) |
