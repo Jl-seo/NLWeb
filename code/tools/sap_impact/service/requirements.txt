@@ -1,0 +1,7 @@
+# 서비스 실행에 필요한 최소 의존성
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# foundry_agent.py (에이전트 등록 스크립트)에만 필요 — 서비스 런타임에는 불필요
+# azure-ai-projects>=2.0.0
+# azure-identity>=1.15.0

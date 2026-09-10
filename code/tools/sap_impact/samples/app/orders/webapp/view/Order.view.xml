@@ -1,0 +1,6 @@
+<mvc:View controllerName="orders.controller.Order"
+  xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:cust="orders.control.StatusBadge">
+  <Table items="{/Orders}">
+    <columns><Column><Text text="Order"/></Column></columns>
+  </Table>
+</mvc:View>

@@ -1,0 +1,15 @@
+{
+  "sap.app": {
+    "id": "orders",
+    "dataSources": {
+      "mainService": { "uri": "/odata/v4/OrderService/", "type": "OData" }
+    }
+  },
+  "sap.ui5": {
+    "routing": {
+      "targets": {
+        "orderList": { "viewName": "orders.view.Order" }
+      }
+    }
+  }
+}

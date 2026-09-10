@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml">
+  <asx:values>
+   <DD02V><TABNAME>ZORDER_HDR</TABNAME><DDLANGUAGE>K</DDLANGUAGE>
+    <DDTEXT>구매오더 헤더</DDTEXT><CONTFLAG>A</CONTFLAG></DD02V>
+   <DD03P_TABLE>
+    <DD03P><FIELDNAME>MANDT</FIELDNAME><ROLLNAME>MANDT</ROLLNAME></DD03P>
+    <DD03P><FIELDNAME>ORDER_ID</FIELDNAME><ROLLNAME>ZDE_ORDER_ID</ROLLNAME></DD03P>
+    <DD03P><FIELDNAME>STATUS</FIELDNAME><ROLLNAME>ZDE_ORDER_STATUS</ROLLNAME></DD03P>
+   </DD03P_TABLE>
+  </asx:values>
+ </asx:abap>
+</abapGit>
